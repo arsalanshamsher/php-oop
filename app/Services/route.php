@@ -97,8 +97,16 @@ class Route
        // Target the last added route
        $lastRoute = end(self::$routes);
        if($lastRoute){
-         self::$nameRoutes[$name] = $lastRoute['url'];
+         self::$nameRoutes[$name] = $lastRoute['uri'];
        }
        return new self();
+   }
+   // Generate URL for a named route
+   public static function route($name)
+   {
+      if (isset(self::$nameRoutes[$name])) {
+         return self::$nameRoutes[$name];
+      }
+      return null;
    }
 }

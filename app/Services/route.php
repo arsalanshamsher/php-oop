@@ -2,30 +2,22 @@
 
 namespace App\Services;
 
-
 class Route
 {
    private static $routes = [];
    private static $nameRoutes = [];
-   private static $controllerNamespace = 'App\Controllers\\';
-
+   private static $controllerNamespace = 'App\\Controllers\\';
 
    /**
     * Register a route with a name and a corresponding URL pattern.
-    * @param string $name
-    * @param string $url
     */
    public static function register($name, $url)
    {
-      self::$nameRoutes[$url] = $name;
+      self::$nameRoutes[$name] = $url;
    }
-
 
    /**
     * Get the URL of a registered route with parameters replaced.
-    * @param string $name
-    * @param array $params
-    * @return string|null
     */
    public static function getRoute($name, $params = [])
    {
@@ -39,74 +31,89 @@ class Route
       return null;
    }
 
-
-   // route add method
-   public static function add($uri, $controller, $action, $method = 'GET', $middlewhere = [])
+   // Add a route
+   public static function add($uri, $controller, $action, $method = 'GET', $middleware = [])
    {
       self::$routes[] = [
          'method' => $method,
          'uri' => $uri,
          'controller' => $controller,
          'action' => $action,
-         'middlewhere' => $middlewhere,
+         'middleware' => $middleware,
       ];
    }
 
-   // get method
-   public static function get($uri, $controller = null, $action = null, $middlewhere = [])
+   // GET method
+   public static function get($uri, $controller = null, $action = null, $middleware = [])
    {
-      self::add($uri, $controller, $action, 'GET', $middlewhere);
+      self::add($uri, $controller, $action, 'GET', $middleware);
       return new self();
    }
-   // post method
-   public static function post($uri, $controller, $action, $middlewhere = [])
+
+   // POST method
+   public static function post($uri, $controller, $action, $middleware = [])
    {
-      self::add($uri, $controller, $action, 'POST', $middlewhere);
+      self::add($uri, $controller, $action, 'POST', $middleware);
       return new self();
    }
-   // method handle
+
+   // Handle incoming request
    public static function handle()
    {
-      $requestUri = $_SERVER['REQUEST_URI'];
+      $requestUri = strtok($_SERVER['REQUEST_URI'], '?'); // Remove query params
       $requestMethod = $_SERVER['REQUEST_METHOD'];
+      
       foreach (self::$routes as $route) {
-         if ($route['uri'] === $requestUri && $route['method'] == $requestMethod) {
-            // handle middlewhere
-            foreach ($route['middlewhere'] as $middlewhere) {
-               $middlewhereClass = new $middlewhere;
-               $middlewhereClass->handle();
+         // Convert route uri to regex for dynamic parameters
+         $pattern = preg_replace('/{([^}]+)}/', '([^/]+)', $route['uri']);
+         $pattern = str_replace('/', '\\/', $pattern);
+         
+         if ($route['method'] === $requestMethod && preg_match("/^$pattern$/", $requestUri, $matches)) {
+            array_shift($matches); // Remove full match
+            
+            // Middleware Handling
+            foreach ($route['middleware'] as $middleware) {
+               $middlewareClass = new $middleware;
+               if (method_exists($middlewareClass, 'handle') && $middlewareClass->handle() === false) {
+                  return; // Stop execution if middleware fails
+               }
             }
-            if (is_callable($route['controller'])) {
-               call_user_func($route['controller']);
-               return true;
-            }
-            $controller = self::$controllerNamespace . $route['controller'];
-            $action = $route['action'];
 
-            $controller = new $controller();
-            $controller->$action();
-            return true;
+            if (is_callable($route['controller'])) {
+               call_user_func_array($route['controller'], $matches);
+               return;
+            }
+
+            $controllerClass = self::$controllerNamespace . $route['controller'];
+            $action = $route['action'];
+            
+            if (class_exists($controllerClass)) {
+               $controller = new $controllerClass();
+               if (method_exists($controller, $action)) {
+                  call_user_func_array([$controller, $action], $matches);
+                  return;
+               }
+            }
          }
       }
+
+      http_response_code(404);
       echo '404 Page Not Found.';
    }
 
-   // Name the route (this enables chaining with ->name('route_name'))
-   // Name the route (this enables chaining with ->name('route_name'))
-   public static function name($name){
-       // Target the last added route
-       $lastRoute = end(self::$routes);
-       if($lastRoute){
+   // Name a route
+   public static function name($name)
+   {
+      $lastRoute = end(self::$routes);
+      if ($lastRoute) {
          self::$nameRoutes[$name] = $lastRoute['uri'];
-       }
-       return new self();
+      }
+      return new self();
    }
+
    // Generate URL for a named route
    public static function route($name)
    {
-      if (isset(self::$nameRoutes[$name])) {
-         return self::$nameRoutes[$name];
-      }
-      return null;
+      return self::$nameRoutes[$name] ?? null;
    }
 }

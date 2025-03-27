@@ -7,7 +7,7 @@ use App\Config\Database;
 class Model extends Database
 {
     protected static $table;
-    protected $data = []; // Yeh define karo
+    protected $attributes = []; // Data store karne ke liye private array
 
     // Fetch all data
     public static function all()
@@ -29,15 +29,43 @@ class Model extends Database
 
         $sql = new Database();
         $result = $sql->select(static::$table, "*", "id = ?", [$id]);
-        return $result ? $result[0] : null;
+
+        if ($result) {
+            return new static($result[0]); // Object return karo
+        }
+
+        return null;
     }
 
-    public function get()
+    // Set attribute dynamically
+    public function __set($key, $value)
     {
-        return $this->data ?? [];
+        $this->attributes[$key] = $value;
     }
 
-    // Where condition
+    // Get attribute dynamically
+    public function __get($key)
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    // Save data to the database
+    public function save()
+    {
+        if (!isset(static::$table)) {
+            throw new \Exception("Table not defined in model");
+        }
+
+        $sql = new Database();
+
+        if (isset($this->attributes['id'])) {
+            // Update existing record
+            return $sql->update(static::$table, $this->attributes, "id = ?", [$this->attributes['id']]);
+        } else {
+            // Insert new record
+            return $sql->insert(static::$table, $this->attributes);
+        }
+    }
     public static function where($column, $operator, $value = null)
     {
         if (!isset(static::$table)) {
@@ -50,22 +78,18 @@ class Model extends Database
         }
 
         $sql = new Database();
-        $data = $sql->select(static::$table, "*", "$column $operator ?", null, null, [$value]);
+        $data = $sql->select(static::$table, "*", "$column $operator ?", [$value]);
 
-        // Instance create karo aur data set karo
-        $instance = new static();
-        $instance->data = $data; 
-        return $instance;
-    }
-
-    // Insert data
-    public static function create($data)
-    {
-        if (!isset(static::$table)) {
-            throw new \Exception("Table not defined in model");
+        if ($data) {
+            $instance = new static();  // ✅ Object create karo
+            $instance->data = $data;   // ✅ Data set karo
+            return $instance;          // ✅ Object return karo
         }
 
-        $sql = new Database();
-        return $sql->insert(static::$table, $data);
+        return null;
+    }
+    public function first()
+    {
+        return !empty($this->data) ? (object) $this->data[0] : null;
     }
 }

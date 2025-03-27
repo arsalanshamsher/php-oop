@@ -62,15 +62,15 @@ class Route
    {
       $requestUri = strtok($_SERVER['REQUEST_URI'], '?'); // Remove query params
       $requestMethod = $_SERVER['REQUEST_METHOD'];
-      
+
       foreach (self::$routes as $route) {
          // Convert route uri to regex for dynamic parameters
          $pattern = preg_replace('/{([^}]+)}/', '([^/]+)', $route['uri']);
          $pattern = str_replace('/', '\\/', $pattern);
-         
+
          if ($route['method'] === $requestMethod && preg_match("/^$pattern$/", $requestUri, $matches)) {
             array_shift($matches); // Remove full match
-            
+
             // Middleware Handling
             foreach ($route['middleware'] as $middleware) {
                $middlewareClass = new $middleware;
@@ -79,17 +79,23 @@ class Route
                }
             }
 
-            if (is_callable($route['controller'])) {
+            // ✅ If controller is a Closure, call it directly
+            if ($route['controller'] instanceof \Closure) {
+               $request = new \App\Services\Request();
+               array_unshift($matches, $request);
                call_user_func_array($route['controller'], $matches);
                return;
             }
 
             $controllerClass = self::$controllerNamespace . $route['controller'];
             $action = $route['action'];
-            
+
             if (class_exists($controllerClass)) {
                $controller = new $controllerClass();
                if (method_exists($controller, $action)) {
+                  $request = new \App\Services\Request(); // ✅ Request object create karo
+                  array_unshift($matches, $request); // ✅ Request ko first parameter bana do
+
                   call_user_func_array([$controller, $action], $matches);
                   return;
                }
@@ -100,6 +106,7 @@ class Route
       http_response_code(404);
       echo '404 Page Not Found.';
    }
+
 
    // Name a route
    public static function name($name)

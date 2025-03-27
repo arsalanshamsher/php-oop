@@ -12,6 +12,11 @@
     <div class="container">
         <h1 class="text-center">Admin</h1>
         <div class="row">
+            <div class="col-12">
+                <a href="<?php echo route('admin-dashboard-create') ?>" class="btn btn-primary">Add</a>
+            </div>
+        </div>
+        <div class="row">
             <div class="col-lg-12">
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
@@ -60,7 +65,7 @@
                                         <td><?php echo $value['created_at']; ?></td>
                                         <td><?php echo $value['updated_at']; ?></td>
                                         <td>
-                                            <a href="">Show</a>
+                                            <a href="<?php echo route('admin-dashboard-show',['id'=>$value['donor_id']]) ?>">Show</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

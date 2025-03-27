@@ -1,7 +1,10 @@
 <?php
+use App\Services\Session;
+
 define('APP_ROOT',__DIR__);
 require_once APP_ROOT . '/vendor/autoload.php';
-
+// ✅ Helper file include karein
+require_once APP_ROOT . '/app/Helpers.php';
 // aotuloader gor namespaced classes
 spl_autoload_register(function($class) {
     $classFile = str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
@@ -11,8 +14,18 @@ spl_autoload_register(function($class) {
         require_once $classPath;
     }
 });
-session_reset();
+Session::start();
+Session::flashOldInput();
+
+// ✅ Flash session automatically clear karega next request pe
+register_shutdown_function(function () {
+    file_put_contents('shutdown_debug.txt', "Shutdown function executed at " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
+    Session::clearFlash();
+});
+
+
 use App\Services\Route;
+
 $route = new Route();
 require_once(APP_ROOT.'/routes/web.php');
 $route->handle();

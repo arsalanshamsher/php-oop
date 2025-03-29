@@ -1,18 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="<?php echo asset('/bootstrap-5.0.2-dist/css/bootstrap.min.css'); ?>">
-    <title>Admin</title>
-</head>
-
-<body>
+<?= include_file('admin/layout/header.php') ?>
     <div class="container">
         <h1 class="text-center">Admin</h1>
         <div class="row">
             <div class="col-12">
+                <a href="<?php echo route('admin-dashboard-create') ?>" class="btn btn-primary">Add</a>
                 <a href="<?php echo route('admin-dashboard-create') ?>" class="btn btn-primary">Add</a>
             </div>
         </div>
@@ -77,6 +68,4 @@
                 </div>
             </div>
         </div>
-</body>
-
-</html>
+        <?= include_file('admin/layout/footer.php') ?>

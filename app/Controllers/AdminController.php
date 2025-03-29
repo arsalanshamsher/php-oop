@@ -11,6 +11,7 @@ class AdminController
     // index 
     public function index()
     {
+        
         $donors = Donor::all();
         // dd($donors); // Dump the data to check if it's fetching correctly
         return view('admin.index', ['donors' => $donors]);

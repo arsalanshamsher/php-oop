@@ -5,6 +5,9 @@ define('APP_ROOT',__DIR__);
 require_once APP_ROOT . '/vendor/autoload.php';
 // ✅ Helper file include karein
 require_once APP_ROOT . '/app/Helpers.php';
+load_env(__DIR__ . '/.env');
+
+
 // aotuloader gor namespaced classes
 spl_autoload_register(function($class) {
     $classFile = str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
@@ -29,3 +32,4 @@ use App\Services\Route;
 $route = new Route();
 require_once(APP_ROOT.'/routes/web.php');
 $route->handle();
+

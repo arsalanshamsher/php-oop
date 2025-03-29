@@ -12,10 +12,11 @@ class Database
 
     public function __construct()
     {
-        $host = "localhost";
-        $dbname = "daar_ul_uloom_alkhizra";
-        $user = "root";
-        $pass = "";
+        
+        $host = env('DB_HOST');
+        $dbname = env('DB_DATABASE', 'default_db');
+        $user = env('DB_USERNAME');
+        $pass = env('DB_PASSWORD');
 
         try {
             $this->pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
@@ -60,34 +61,34 @@ class Database
     }
 
     public function select($table, $columns = "*", $where = [], $orderBy = "", $limit = null, $params = [])
-{
-    $sql = "SELECT $columns FROM $table";
+    {
+        $sql = "SELECT $columns FROM $table";
 
-    if (!empty($where)) {
-        // ✅ Ensure $where is an array
-        if (!is_array($where)) {
-            throw new \Exception("Where clause must be an array.");
+        if (!empty($where)) {
+            // ✅ Ensure $where is an array
+            if (!is_array($where)) {
+                throw new \Exception("Where clause must be an array.");
+            }
+
+            $whereClause = implode(" AND ", array_map(fn($col) => "$col = ?", array_keys($where)));
+            $sql .= " WHERE $whereClause";
         }
 
-        $whereClause = implode(" AND ", array_map(fn($col) => "$col = ?", array_keys($where)));
-        $sql .= " WHERE $whereClause";
+        if (!empty($orderBy)) {
+            $sql .= " ORDER BY $orderBy";
+        }
+
+        if ($limit) {
+            $sql .= " LIMIT $limit";
+        }
+
+        $this->stmt = $this->pdo->prepare($sql);
+        $this->stmt->execute(array_values($where)); // ✅ Ensure correct array format
+
+        return $this->stmt->fetchAll();
     }
 
-    if (!empty($orderBy)) {
-        $sql .= " ORDER BY $orderBy";
-    }
 
-    if ($limit) {
-        $sql .= " LIMIT $limit";
-    }
-
-    $this->stmt = $this->pdo->prepare($sql);
-    $this->stmt->execute(array_values($where)); // ✅ Ensure correct array format
-
-    return $this->stmt->fetchAll();
-}
-
-    
 
     public function first($table, $where = [])
     {

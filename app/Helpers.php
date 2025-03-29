@@ -1,25 +1,24 @@
 <?php
 
-// redirect funtion
-
 use App\Services\Route;
 use App\Services\Session;
 
 /**
  * Debugging function similar to Laravel's dd().
- * This function prints the given variables in a readable format and stops execution.
- *
- * @param mixed ...$vars - Multiple variables to dump.
  */
 function dd(...$vars)
 {
-    echo "<pre>"; // Preformatted text for better readability
+    echo "<pre>";
     foreach ($vars as $var) {
-        print_r($var); // Print each variable
+        print_r($var);
     }
     echo "</pre>";
-    die; // Stop script execution after dumping
+    die;
 }
+
+/**
+ * Redirect helper function.
+ */
 function redirect()
 {
     return new class {
@@ -29,88 +28,123 @@ function redirect()
             header('Location: ' . $url);
             exit;
         }
+
+        public function back()
+        {
+            $previousUrl = $_SERVER['HTTP_REFERER'] ?? '/';
+            header("Location: $previousUrl");
+            exit;
+        }
     };
 }
 
-// end of redirect function
-
-// view directory function
+/**
+ * View function to include Blade-style views.
+ */
 function view($dir, $data = [], $defaultData = [])
 {
     $data = array_merge($data, $defaultData);
     extract($data);
-    $dir = str_replace('\\', DIRECTORY_SEPARATOR, $dir);
-    $dir = str_replace('.', DIRECTORY_SEPARATOR, $dir);
+    $dir = str_replace(['\\', '.'], DIRECTORY_SEPARATOR, $dir);
     $file = APP_ROOT . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . $dir . '.php';
+    
     if (file_exists($file)) {
         return require $file;
     }
-    throw new Exception('View not found. ' . $file);
+    
+    throw new Exception('View not found: ' . $file);
 }
-// end of view directory function
 
+/**
+ * Generate asset URLs.
+ */
 function asset($dir)
 {
-    // Replace backslashes with forward slashes for web compatibility
     $dir = str_replace('\\', '/', $dir);
-
-    // Build the file path
     $file = APP_ROOT . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $dir);
 
-    // Check if the file exists
     if (file_exists($file)) {
-        // Return the correct relative path as a URL
-        return '/public/' . $dir;
+        return '/public/' . ltrim($dir, '/');
     }
 
-    // Throw an exception if the file is not found
     throw new Exception('Asset not found: ' . $file);
 }
 
-
-// include function
+/**
+ * Include file from views directory.
+ */
 function include_file($file)
 {
     include(APP_ROOT . '/views/' . $file);
 }
 
-// route function
+/**
+ * Get the named route URL.
+ */
 function route($name, $params = [])
 {
-    static $route;
-    // Initialize the Route instance once
-    if (!$route) {
-        $route = new Route();
-        // Register routes here (or load them from a configuration file)
-
-    }
-
-    // Get the URL of the route
-    return $route->getRoute($name, $params);
+    return Route::getRoute($name, $params) ?? '/';
 }
 
+/**
+ * Get old form input value.
+ */
 function old($field, $default = '')
 {
-    $old = Session::get('old', []);
-    return isset($old[$field]) ? $old[$field] : $default;
+    return Session::get('old', [])[$field] ?? $default;
 }
 
+/**
+ * Check if an error exists for a field.
+ */
 function has_error($field)
 {
-    $errors = Session::get('errors', []);
-    return isset($errors[$field]);
+    return isset(Session::get('errors', [])[$field]);
 }
 
+/**
+ * Get the first error message for a field.
+ */
 function error_message($field)
 {
-    $errors = Session::get('errors', []);
-    return has_error($field) ? $errors[$field][0] : '';
+    return has_error($field) ? Session::get('errors', [])[$field][0] : '';
 }
 
+/**
+ * Get the public path.
+ */
 function public_path($path = '')
 {
     return rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/public' . ($path ? '/' . ltrim($path, '/') : '');
 }
 
+/**
+ * Load environment variables from .env file
+ */
+function load_env($file)
+{
+    if (!file_exists($file)) {
+        throw new Exception(".env file not found at: " . $file);
+    }
+    
+    $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    
+    foreach ($lines as $line) {
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value, "\"'"); // Remove extra quotes
+            putenv("$key=$value"); // ✅ Store in system environment
+        }
+    }
+}
 
 
+/**
+ * Get environment variable value
+ */
+function env($key, $default = null)
+{
+    // dd($default);
+    return $_ENV[$key] ?? getenv($key) ?? $default;
+}

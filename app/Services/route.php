@@ -8,17 +8,13 @@ class Route
    private static $nameRoutes = [];
    private static $controllerNamespace = 'App\\Controllers\\';
 
-   /**
-    * Register a route with a name and a corresponding URL pattern.
-    */
+   // ✅ Route Register
    public static function register($name, $url)
    {
       self::$nameRoutes[$name] = $url;
    }
 
-   /**
-    * Get the URL of a registered route with parameters replaced.
-    */
+   // ✅ Named Route URL Fetch
    public static function getRoute($name, $params = [])
    {
       if (isset(self::$nameRoutes[$name])) {
@@ -31,84 +27,81 @@ class Route
       return null;
    }
 
-   // Add a route
-   public static function add($uri, $controller, $action, $method = 'GET', $middleware = [])
+   // ✅ Route Add Logic
+   public static function add($uri, $controller, $action = null, $method = 'GET', $middleware = [])
    {
+      // Agar `$controller` ek array hai to usko `controller` aur `action` me split karenge
+      if (is_array($controller)) {
+         [$controller, $action] = $controller;
+      }
+
       self::$routes[] = [
-         'method' => $method,
-         'uri' => $uri,
+         'method'     => $method,
+         'uri'        => $uri,
          'controller' => $controller,
-         'action' => $action,
+         'action'     => $action,
          'middleware' => $middleware,
       ];
    }
 
-   // GET method
-   public static function get($uri, $controller = null, $action = null, $middleware = [])
+   // ✅ GET Method
+   public static function get($uri, $controller, $action = null, $middleware = [])
    {
       self::add($uri, $controller, $action, 'GET', $middleware);
       return new self();
    }
 
-   // POST method
-   public static function post($uri, $controller, $action, $middleware = [])
+   // ✅ POST Method
+   public static function post($uri, $controller, $action = null, $middleware = [])
    {
       self::add($uri, $controller, $action, 'POST', $middleware);
       return new self();
    }
 
-   // Handle incoming request
+   // ✅ Route Handler
    public static function handle()
-   {
-      $requestUri = strtok($_SERVER['REQUEST_URI'], '?'); // Remove query params
-      $requestMethod = $_SERVER['REQUEST_METHOD'];
+{
+    $requestUri = strtok($_SERVER['REQUEST_URI'], '?'); // Query params hatao
+    $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-      foreach (self::$routes as $route) {
-         // Convert route uri to regex for dynamic parameters
-         $pattern = preg_replace('/{([^}]+)}/', '([^/]+)', $route['uri']);
-         $pattern = str_replace('/', '\\/', $pattern);
+    foreach (self::$routes as $route) {
+        // Route pattern ko regex me convert karo
+        $pattern = preg_replace('/{([^}]+)}/', '([^/]+)', $route['uri']);
+        $pattern = str_replace('/', '\\/', $pattern);
 
-         if ($route['method'] === $requestMethod && preg_match("/^$pattern$/", $requestUri, $matches)) {
-            array_shift($matches); // Remove full match
+        if ($route['method'] === $requestMethod && preg_match("/^$pattern$/", $requestUri, $matches)) {
+            array_shift($matches); // Full match ko hatao
 
-            // Middleware Handling
-            foreach ($route['middleware'] as $middleware) {
-               $middlewareClass = new $middleware;
-               if (method_exists($middlewareClass, 'handle') && $middlewareClass->handle() === false) {
-                  return; // Stop execution if middleware fails
-               }
-            }
+            $request = new \App\Services\Request(); // ✅ Request object banao
+            $params = [...$matches]; // ✅ Sirf route parameters rakhna hai
 
-            // ✅ If controller is a Closure, call it directly
-            if ($route['controller'] instanceof \Closure) {
-               $request = new \App\Services\Request();
-               array_unshift($matches, $request);
-               call_user_func_array($route['controller'], $matches);
-               return;
-            }
-
+            // Agar controller ka function `Request` expect karta hai, to usko pehle pass karo
             $controllerClass = self::$controllerNamespace . $route['controller'];
             $action = $route['action'];
 
             if (class_exists($controllerClass)) {
-               $controller = new $controllerClass();
-               if (method_exists($controller, $action)) {
-                  $request = new \App\Services\Request(); // ✅ Request object create karo
-                  array_unshift($matches, $request); // ✅ Request ko first parameter bana do
+                $controller = new $controllerClass();
+                $reflection = new \ReflectionMethod($controller, $action);
+                $parameters = $reflection->getParameters();
 
-                  call_user_func_array([$controller, $action], $matches);
-                  return;
-               }
+                // Check karo agar first parameter `Request` hai
+                if (isset($parameters[0]) && $parameters[0]->getType() && $parameters[0]->getType()->getName() === \App\Services\Request::class) {
+                    array_unshift($params, $request); // ✅ Request ko first parameter bana do
+                }
+
+                call_user_func_array([$controller, $action], $params);
+                return;
             }
-         }
-      }
+        }
+    }
 
-      http_response_code(404);
-      echo '404 Page Not Found.';
-   }
+    http_response_code(404);
+    echo '404 Page Not Found.';
+}
 
 
-   // Name a route
+
+   // ✅ Name Route
    public static function name($name)
    {
       $lastRoute = end(self::$routes);
@@ -118,9 +111,9 @@ class Route
       return new self();
    }
 
-   // Generate URL for a named route
-   public static function route($name)
+   // ✅ Generate Named Route URL
+   public static function route($name, $params = [])
    {
-      return self::$nameRoutes[$name] ?? null;
+      return self::getRoute($name, $params);
    }
 }

@@ -53,23 +53,24 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($donors as $kwy => $value) : ?>
+                                <?php foreach ($donors as $key => $value) : ?>
                                     <tr>
-                                        <th scope="row"><?php echo $value['donor_id']; ?></th>
-                                        <td><?php echo $value['donor_name']; ?></td>
-                                        <td><?php echo $value['email']; ?></td>
-                                        <td><?php echo $value['phone_number']; ?></td>
-                                        <td><?php echo $value['address']; ?></td>
-                                        <td><img src="<?php echo $value['donor_profile']; ?>" alt="Profile Image" width="50"></td>
-                                        <td><?php echo $value['status'] == 1 ? 'Active' : 'Inactive'; ?></td>
-                                        <td><?php echo $value['created_at']; ?></td>
-                                        <td><?php echo $value['updated_at']; ?></td>
+                                        <th scope="row"><?php echo $value->donor_id; ?></th>
+                                        <td><?php echo $value->donor_name; ?></td>
+                                        <td><?php echo $value->email; ?></td>
+                                        <td><?php echo $value->phone_number; ?></td>
+                                        <td><?php echo $value->address; ?></td>
+                                        <td><img src="<?php echo $value->donor_profile; ?>" alt="Profile Image" width="50"></td>
+                                        <td><?php echo $value->status == 1 ? 'Active' : 'Inactive'; ?></td>
+                                        <td><?php echo $value->created_at; ?></td>
+                                        <td><?php echo $value->updated_at; ?></td>
                                         <td>
-                                            <a href="<?php echo route('admin-dashboard-show',['id'=>$value['donor_id']]) ?>">Show</a>
+                                            <a href="<?php echo route('admin-dashboard-show', ['id' => $value->donor_id]) ?>">Show</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
+
                         </table>
 
                     </div>

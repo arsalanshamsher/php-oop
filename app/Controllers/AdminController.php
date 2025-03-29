@@ -12,22 +12,19 @@ class AdminController
     public function index()
     {
         $donors = Donor::all();
-        // echo '<pre>';
-        // print_r($donors);
-        // echo '</pre>';
-        // die;
+        // dd($donors); // Dump the data to check if it's fetching correctly
         return view('admin.index', ['donors' => $donors]);
     }
     // create
     public function create()
     {
-        
+
         return view('admin.create');
     }
     // store function
     public function store(Request $request)
     {
-        
+
         // 1️⃣ Validate Data
         $validatedData = $request->validate([
             'donor_name'   => 'required|string|max:255',
@@ -37,16 +34,17 @@ class AdminController
             'donor_profile' => 'nullable|image|mimes:image/jpeg,image/png,image/jpg,image/gif|max:2048',
             'status'       => 'required|in:0,1'
         ]);
-        dd($request->all());
-    
+
         // 2️⃣ Profile Image Upload
         if ($request->hasFile('donor_profile')) {
             $file = $request->file('donor_profile');
-            $imagePath = 'uploads/donor_profiles/' . time() . '_' . $file['name'];
-            move_uploaded_file($file['tmp_name'], $imagePath);
-            $validatedData['donor_profile'] = $imagePath;
+            $filename  = $file->getClientOriginalName();
+            // Move file to public/uploads directory
+            $file->move(public_path('uploads/donor_profiles'), $filename);
+            // Save path to database
+            $validatedData['donor_profile'] = 'uploads/donor_profiles/' . $filename;
         }
-    
+
         // 3️⃣ Donor Object Create Karo
         $donor = new Donor();
         $donor->donor_name = $validatedData['donor_name'];
@@ -54,29 +52,28 @@ class AdminController
         $donor->phone_number = $validatedData['phone_number'];
         $donor->address = $validatedData['address'];
         $donor->status = $validatedData['status'];
-    
+
         // 4️⃣ Profile Image Agar Hai to Set Karo
         if (isset($validatedData['donor_profile'])) {
             $donor->donor_profile = $validatedData['donor_profile'];
         }
-    
+
         // 5️⃣ Data Database Me Save Karo
         $donor->save();
-    
+
         // 6️⃣ Redirect with Success Message
         return redirect()->route('admin-dashboard')->with('success', 'Donor Added Successfully!');
     }
-    
+
 
 
     // show
-    public function show($id)
+    public function show(Request $request,$id)
     {
+        
         $donor = Donor::where('donor_id', $id)->first();
-        echo '<pre>';
-        print_r($donor);
-        echo '</pre>';
-        die;
+        dd($donor);
+       
         return view('admin.show', ['donor' => $donor]);
     }
 }

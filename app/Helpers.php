@@ -107,4 +107,10 @@ function error_message($field)
     return has_error($field) ? $errors[$field][0] : '';
 }
 
+function public_path($path = '')
+{
+    return rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/public' . ($path ? '/' . ltrim($path, '/') : '');
+}
+
+
 

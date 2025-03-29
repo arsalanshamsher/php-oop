@@ -2,178 +2,101 @@
 
 namespace App\Config;
 
-use mysqli;
+use PDO;
+use PDOException;
 
 class Database
 {
-    private $db_host = "localhost";
-    private $db_user = "root";
-    private $db_pass = "";
-    private $db_name = "daar_ul_uloom_alkhizra";
-    private $mysqli = null;
-    private $result = array();
-    private $conn = false;
+    private $pdo;
+    private $stmt;
 
     public function __construct()
     {
-        $this->mysqli = new mysqli($this->db_host, $this->db_user, $this->db_pass, $this->db_name);
+        $host = "localhost";
+        $dbname = "daar_ul_uloom_alkhizra";
+        $user = "root";
+        $pass = "";
 
-        if ($this->mysqli->connect_error) {
-            die("Connection Error: " . $this->mysqli->connect_error);
+        try {
+            $this->pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            ]);
+        } catch (PDOException $e) {
+            die("Database Connection Error: " . $e->getMessage());
         }
-        $this->conn = true;
     }
 
-    public function insert($table, $params = array())
+    public function insert($table, $data)
     {
-        if ($this->tableExists($table)) {
-            $fields = implode(", ", array_keys($params));
-            $placeholders = implode(", ", array_fill(0, count($params), "?"));
-            $types = str_repeat("s", count($params));
-            $values = array_values($params);
+        $columns = implode(", ", array_keys($data));
+        $placeholders = ":" . implode(", :", array_keys($data));
 
-            $sql = "INSERT INTO $table ($fields) VALUES ($placeholders)";
-            $stmt = $this->mysqli->prepare($sql);
-            $stmt->bind_param($types, ...$values);
+        $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+        $this->stmt = $this->pdo->prepare($sql);
 
-            if ($stmt->execute()) {
-                return $stmt->insert_id;
-            } else {
-                return "Error: " . $stmt->error;
-            }
-        }
-        return false;
+        return $this->stmt->execute($data) ? $this->pdo->lastInsertId() : false;
     }
 
-    public function update($table, $params = array(), $where)
+    public function update($table, $data, $where)
     {
-        if ($this->tableExists($table)) {
-            $set_clause = implode(" = ?, ", array_keys($params)) . " = ?";
-            $values = array_values($params);
-            $types = str_repeat("s", count($params));
+        $set = implode(", ", array_map(fn($col) => "$col = :$col", array_keys($data)));
+        $whereClause = implode(" AND ", array_map(fn($col) => "$col = :$col", array_keys($where)));
 
-            $sql = "UPDATE $table SET $set_clause WHERE $where";
-            $stmt = $this->mysqli->prepare($sql);
-            $stmt->bind_param($types, ...$values);
+        $sql = "UPDATE $table SET $set WHERE $whereClause";
+        $this->stmt = $this->pdo->prepare($sql);
 
-            return $stmt->execute() ? true : "Error: " . $stmt->error;
-        }
-        return false;
+        return $this->stmt->execute(array_merge($data, $where));
     }
 
     public function delete($table, $where)
     {
-        if ($this->tableExists($table)) {
-            $sql = "DELETE FROM $table WHERE $where";
-            return $this->mysqli->query($sql) ? true : "Error: " . $this->mysqli->error;
-        }
-        return false;
+        $whereClause = implode(" AND ", array_map(fn($col) => "$col = :$col", array_keys($where)));
+
+        $sql = "DELETE FROM $table WHERE $whereClause";
+        $this->stmt = $this->pdo->prepare($sql);
+
+        return $this->stmt->execute($where);
     }
 
-    public function select($table, $rows = "*", $where = null, $orderBy = null, $limit = null, $params = [])
-    {
-        if ($this->tableExists($table)) {
-            $sql = "SELECT $rows FROM $table";
+    public function select($table, $columns = "*", $where = [], $orderBy = "", $limit = null, $params = [])
+{
+    $sql = "SELECT $columns FROM $table";
 
-            if ($where) {
-                $sql .= " WHERE $where";
-            }
-
-            if ($orderBy) {
-                $sql .= " ORDER BY $orderBy";
-            }
-
-            if ($limit) {
-                $sql .= " LIMIT $limit";
-            }
-
-            $stmt = $this->mysqli->prepare($sql);
-
-            if (!empty($params)) {
-                $types = str_repeat("s", count($params));
-                $stmt->bind_param($types, ...$params);
-            }
-
-            $stmt->execute();
-            $result = $stmt->get_result();
-
-            return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    if (!empty($where)) {
+        // ✅ Ensure $where is an array
+        if (!is_array($where)) {
+            throw new \Exception("Where clause must be an array.");
         }
-        return false;
+
+        $whereClause = implode(" AND ", array_map(fn($col) => "$col = ?", array_keys($where)));
+        $sql .= " WHERE $whereClause";
     }
 
-
-    public function pagination($table, $limit)
-    {
-        if ($this->tableExists($table)) {
-            $sql = "SELECT COUNT(*) AS total FROM $table";
-            $query = $this->mysqli->query($sql);
-            $total = $query->fetch_assoc()['total'];
-            $pages = ceil($total / $limit);
-
-            $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-            $pagination = "<div class='pagination'>";
-            if ($current_page > 1) {
-                $pagination .= "<a href='?page=" . ($current_page - 1) . "'>Prev</a>";
-            }
-            for ($i = 1; $i <= $pages; $i++) {
-                $active = ($i == $current_page) ? "class='active'" : "";
-                $pagination .= "<a $active href='?page=$i'>$i</a>";
-            }
-            if ($current_page < $pages) {
-                $pagination .= "<a href='?page=" . ($current_page + 1) . "'>Next</a>";
-            }
-            $pagination .= "</div>";
-            return $pagination;
-        }
+    if (!empty($orderBy)) {
+        $sql .= " ORDER BY $orderBy";
     }
 
-    private function tableExists($table)
+    if ($limit) {
+        $sql .= " LIMIT $limit";
+    }
+
+    $this->stmt = $this->pdo->prepare($sql);
+    $this->stmt->execute(array_values($where)); // ✅ Ensure correct array format
+
+    return $this->stmt->fetchAll();
+}
+
+    
+
+    public function first($table, $where = [])
     {
-        $sql = "SHOW TABLES LIKE '$table'";
-        $query = $this->mysqli->query($sql);
-        return ($query->num_rows > 0) ? true : "Error: Table does not exist";
+        $result = $this->select($table, "*", $where, "", 1);
+        return $result ? $result[0] : null;
     }
 
     public function close()
     {
-        if ($this->conn) {
-            $this->mysqli->close();
-            $this->conn = false;
-        }
-    }
-
-    public function getRecord($table, $conditions = [])
-    {
-        if ($this->tableExists($table)) {
-            $sql = "SELECT * FROM $table";
-            $params = [];
-            $types = '';
-
-            if (!empty($conditions)) {
-                $sql .= " WHERE ";
-                $clauses = [];
-
-                foreach ($conditions as $key => $value) {
-                    $clauses[] = "$key = ?";
-                    $params[] = $value;
-                    $types .= 's'; // Assuming all values are strings, modify as needed
-                }
-
-                $sql .= implode(" AND ", $clauses);
-            }
-
-            $stmt = $this->mysqli->prepare($sql);
-
-            if (!empty($params)) {
-                $stmt->bind_param($types, ...$params);
-            }
-
-            $stmt->execute();
-            $result = $stmt->get_result();
-
-            return $result->fetch_all(MYSQLI_ASSOC);
-        }
-        return false;
+        $this->pdo = null;
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+use App\Services\UploadedFile; // ✅ Import UploadedFile class
 
 class Request
 {
@@ -35,7 +36,13 @@ class Request
 
     public function file($key)
     {
-        return $this->hasFile($key) ? $this->files[$key] : null;
+        if ($this->hasFile($key)) {
+            return new UploadedFile($this->files[$key]); // ✅ Use UploadedFile Class
+        }
+        return null;
+    }
+    public function getClientOriginalName($key) {
+        return $this->file($key)['name'] ?? null;
     }
 
     public function validate(array $rules)

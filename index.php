@@ -6,7 +6,8 @@ require_once APP_ROOT . '/vendor/autoload.php';
 // ✅ Helper file include karein
 require_once APP_ROOT . '/app/Helpers.php';
 load_env(__DIR__ . '/.env');
-
+Session::start();
+Session::flashOldInput();
 
 // aotuloader gor namespaced classes
 spl_autoload_register(function($class) {
@@ -17,8 +18,8 @@ spl_autoload_register(function($class) {
         require_once $classPath;
     }
 });
-Session::start();
-Session::flashOldInput();
+
+
 
 // ✅ Flash session automatically clear karega next request pe
 register_shutdown_function(function () {

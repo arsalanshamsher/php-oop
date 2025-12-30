@@ -7,6 +7,7 @@ class Kernel
     protected $commands = [
         'make:model' => \App\Console\Commands\MakeModel::class,
         'make:controller' => \App\Console\Commands\MakeController::class,
+        'make:apicontroller' => \App\Console\Commands\MakeApiController::class,
     ];
 
     public function handle($argv)

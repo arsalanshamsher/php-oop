@@ -78,6 +78,27 @@ class Route
       return new self();
    }
 
+   // ✅ PUT Method
+   public static function put($uri, $controller, $action = null, $middleware = [])
+   {
+      self::add($uri, $controller, $action, 'PUT', $middleware);
+      return new self();
+   }
+
+   // ✅ DELETE Method
+   public static function delete($uri, $controller, $action = null, $middleware = [])
+   {
+      self::add($uri, $controller, $action, 'DELETE', $middleware);
+      return new self();
+   }
+
+   // ✅ PATCH Method
+   public static function patch($uri, $controller, $action = null, $middleware = [])
+   {
+      self::add($uri, $controller, $action, 'PATCH', $middleware);
+      return new self();
+   }
+
    // ✅ Route Handler
    // ✅ Route Handler
    public static function handle()

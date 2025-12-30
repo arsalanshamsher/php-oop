@@ -29,8 +29,13 @@ register_shutdown_function(function () {
 
 
 use App\Services\Route;
+use App\Services\ErrorHandler;
+
+// Set up global exception handler
+set_exception_handler([ErrorHandler::class, 'handle']);
 
 $route = new Route();
 require_once(APP_ROOT.'/routes/web.php');
+require_once(APP_ROOT.'/routes/api.php');
 $route->handle();
 

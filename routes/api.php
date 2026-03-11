@@ -1,6 +1,6 @@
 <?php
 
-use App\Services\Route;
+use App\Core\Routing\Route;
 
 // API Routes for Donors
 Route::get('/api/donors', ['Api\DonorApiController', 'index'])->name('api.donors.index');

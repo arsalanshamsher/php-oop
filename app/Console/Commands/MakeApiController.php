@@ -48,6 +48,8 @@ class MakeApiController
 
 namespace App\Controllers\Api;
 
+use App\Core\Http\ApiRequest;
+use App\Core\Http\ApiResponse;
 use App\Controllers\ApiController;
 use App\Models\\{$modelClass};
 

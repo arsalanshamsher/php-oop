@@ -2,8 +2,8 @@
 
 namespace App\Controllers;
 
-use App\Services\ApiRequest;
-use App\Services\ApiResponse;
+use App\Core\Http\ApiRequest;
+use App\Core\Http\ApiResponse;
 
 abstract class ApiController
 {

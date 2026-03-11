@@ -2,6 +2,9 @@
 <?php
 
 require_once __DIR__ . '/vendor/autoload.php';
+// Helpers are now autoloaded via composer.json
+
+load_env(__DIR__ . '/.env');
 
 use App\Console\Kernel;
 

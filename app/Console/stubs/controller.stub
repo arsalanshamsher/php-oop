@@ -4,10 +4,10 @@ namespace App\Controllers;
 
 use App\Services\Request;
 
-class {{controllerName}}
+class {{controllerName}} extends Controller
 {
     public function index()
     {
-        return view('{{controllerName}}.index');
+        // TODO: Add your logic here
     }
 }

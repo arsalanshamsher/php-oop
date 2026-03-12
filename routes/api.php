@@ -1,9 +1,10 @@
 <?php
 
+use App\Controllers\Api\DonorApiController;
 use App\Core\Routing\Route;
 
 // API Routes for Donors
-Route::get('/api/donors', ['Api\DonorApiController', 'index'])->name('api.donors.index');
+Route::get('/api/donors', [DonorApiController::class, 'index'])->name('api.donors.index');
 Route::get('/api/donors/{id}', ['Api\DonorApiController', 'show'])->name('api.donors.show');
 Route::post('/api/donors', ['Api\DonorApiController', 'store'])->name('api.donors.store');
 Route::put('/api/donors/{id}', ['Api\DonorApiController', 'update'])->name('api.donors.update');

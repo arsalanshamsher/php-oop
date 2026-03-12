@@ -1,3 +1,4 @@
+<?php
 namespace App\Core\Http;
 
 class ApiRequest extends Request

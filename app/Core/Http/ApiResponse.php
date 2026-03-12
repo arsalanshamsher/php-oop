@@ -9,7 +9,7 @@ class ApiResponse
      */
     public static function success($data = null, $message = 'Success', $statusCode = 200)
     {
-        return self::send([
+        return self::json([
             'success' => true,
             'message' => $message,
             'data' => $data,
@@ -22,7 +22,7 @@ class ApiResponse
      */
     public static function error($message = 'Error', $statusCode = 400, $errors = null)
     {
-        return self::send([
+        return self::json([
             'success' => false,
             'message' => $message,
             'errors' => $errors,
@@ -65,7 +65,7 @@ class ApiResponse
     /**
      * Send the actual response
      */
-    private static function send($data, $statusCode)
+    public static function json($data, $statusCode = 200)
     {
         http_response_code($statusCode);
         header('Content-Type: application/json');

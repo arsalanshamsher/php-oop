@@ -260,3 +260,28 @@ if (!function_exists('csrf_field')) {
         return '<input type="hidden" name="_token" value="dummy_token">';
     }
 }
+
+/**
+ * Return an API response object.
+ */
+if (!function_exists('response')) {
+    function response()
+    {
+        return new class {
+            public function json($data, $statusCode = 200)
+            {
+                return \App\Core\Http\ApiResponse::json($data, $statusCode);
+            }
+        };
+    }
+}
+
+/**
+ * Log helper function.
+ */
+if (!function_exists('logger')) {
+    function logger()
+    {
+        return new \App\Core\Log\Logger();
+    }
+}

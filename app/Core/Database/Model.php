@@ -5,7 +5,7 @@ namespace App\Core\Database;
 use App\Core\Database\DatabaseConnection as Database;
 use InvalidArgumentException;
 
-class Model
+class Model implements \JsonSerializable
 {
     protected static $table;
     protected $attributes = [];
@@ -254,6 +254,14 @@ class Model
     public function setRelation($name, $value)
     {
         $this->relations[$name] = $value;
+    }
+
+    /**
+     * Specify data which should be serialized to JSON.
+     */
+    public function jsonSerialize(): mixed
+    {
+        return $this->attributes;
     }
 
     /**

@@ -26,6 +26,13 @@ class Model implements \JsonSerializable
     {
         return (new static)->get();
     }
+    // ✅ Create a new record
+    public static function create(array $attributes = [])
+    {
+        $instance = new static($attributes);
+        $instance->save();
+        return $instance;
+    }
 
     // ✅ Find by ID
     public static function find($id)
